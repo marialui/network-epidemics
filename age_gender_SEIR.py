@@ -14,10 +14,6 @@ def gen_age(
     # Of percentage defining each class of subjects
     p_df = pd.read_csv("%s" % statistics)
     p_df = p_df.set_index('Age')
-    # p_df['perc-M']=round((p_df['M']/p_df['M'].sum())*100,2)
-    # p_df['perc-F'] = round(p_df['F'] / p_df['F'].sum()*100,2)
-    # p_df=p_df.reindex(p_df.index.values.tolist() + ['Total'])
-    # total= p_df['M'].sum()+p_df['F'].sum()
     total = (p_df['F'].sum() + p_df['M'].sum())
     p_df['M'] = round((p_df['M'] / total) * 100, 2)
     p_df['F'] = round((p_df['F'] / total) * 100, 2)
@@ -27,11 +23,10 @@ def gen_age(
 
     return p_df
 
-def covid_statistics(tabella,nodes):      #it takes in input the number of nodes and, using the statistics from the table
+def covid_statistics(tabella):      #it takes in input the number of nodes and, using the statistics from the table
                                             #gives in output the number of death and case for each age and gender
     p_df1 = pd.read_csv("%s" %tabella)
     p_df1 = p_df1.set_index('age_classes')
-    total1 = (p_df1['total_cases'].sum())
     p_df1['M']=p_df1['male_deaths'].div(p_df1['male_cases'])
     p_df1['F'] = p_df1['female_deaths'].div(p_df1['female_cases'])
 
@@ -51,7 +46,6 @@ def population_attribute(table, network,table1):
     print(t)
     table1=table1[table1.columns[-2:]]
     df2 = table1.replace(table1, 0)
-   # df2 = pd.DataFrame().reindex_like(table)
     diz=df2.to_dict('index')
 
     nodi_tmp = {i: object() for i in range(t)}  # temporary dictionary containing all the nodes
@@ -61,7 +55,7 @@ def population_attribute(table, network,table1):
         for sex in (list(table.columns)):
             perc = table.loc[age][
                 sex]  # this is the fraction (percentage) of population that will have a specific sex and age
-            # rows= age , col= sex
+                        # rows= age , col= sex
             n = int(round(perc * t / 100))
             while n != 0:  # finchè non avremmo aggiunto tutti gli n nodi di una categoria
                 nodo = randrange(t)  # estrai random un nodo
@@ -81,7 +75,6 @@ def population_attribute(table, network,table1):
                             else:
                                 (diz[anno][sex]).append(str(nodo))
 
-    print(len(nodi))
     return (nodi, diz )  #dictionary contains the age range: sex:[list of nodes] , is a dictionary of dictionaries
 
 
@@ -93,7 +86,6 @@ def fight_or_flight(diz, prob):
             f=tabella.loc[ages][sex] #frequency of death
             total=len(diz[ages][sex]) # total number for a category
             n=int((total/100)*f)
-            #print(total, )
             lista=random.sample(range(0,total), n) #index of the death node in the list that has to be deleted from the list and added to the
             for i in (lista):
                 died[diz[ages][sex][i]]=0            #died dictionary will finally contain all the nodes that will die
@@ -101,20 +93,20 @@ def fight_or_flight(diz, prob):
 
 
 def SEIRmodel(n, m, f, path):
-    a = {'susceptible': [], 'exposed': [], 'infetti': [],'recovered': []}  # we initialize an empty dictionary in which we will store
+    a = {'susceptible': [], 'exposed': [], 'infetti': [],'recovered': [],'died':[]}  # we initialize an empty dictionary in which we will store
     # the list of nodes whose attribute is respectively susceptible,
-    # exposed, infected or recovered
+    # exposed, infected , recovered or died
 
     ba = nx.barabasi_albert_graph(n,m)  # function that given an n number of nodes,  with m edges, and f number of initial infected:
     # produces a random graph using Barabási-Albert preferential attachment model.
     iterationcounter = 0
     tab = gen_age(path+"Italy-2019.csv")
-    covid_tab=covid_statistics(path+"covid_gender_age.csv",n)
+    covid_tab=covid_statistics(path+"covid_gender_age.csv")
     D_result=population_attribute(tab, ba,covid_tab)
     dizionario=D_result[0]
     diz2=D_result[1]
     will_die=fight_or_flight(diz2, covid_tab) ############################# THIS IS A DICTIONARY CONTAINING THE NODE
-    print(will_die)                                                                       #NUMBER THAT WILL DIE
+    print('heeeeeeeeere', len(will_die))                                                                        #NUMBER THAT WILL DIE
     lista_attributi = ['gender', 'age', 'state']
     #print(dizionario)
     # we can add network attributes from the dictionary dizionario we just created
@@ -139,6 +131,7 @@ def SEIRmodel(n, m, f, path):
     andamentoS = {iterationcounter: len(a['susceptible']) / n}  # we do the same for susceptible
     andamentoR = {iterationcounter: len(a['recovered']) / n}  # and the same for recovered
     andamentoE = {iterationcounter: len(a['exposed']) / n}  # and for exposed
+    andamentoD = {iterationcounter: len(a['died']) / n}  # and for death
 
     while iterationcounter <= 100:  # for 100 iterations
         if len(a['infetti']) % 100 == 0:
@@ -155,8 +148,7 @@ def SEIRmodel(n, m, f, path):
                 if ba.node[j]["state"] == "S":  # if it was in a susceptible state
                     # print('j is' ,j)
                     ba.node[j]["state"] = "E"  # now it began infected, so its attribute is I
-                    a['susceptible'].remove(
-                        j)  # and will be removed from the list of susceptible people in the dictionary
+                    a['susceptible'].remove(j)  # and will be removed from the list of susceptible people in the dictionary
                     a['exposed'].append(j)  # so we update the infected list in the dictionary with the new infected
 
         iterationcounter = iterationcounter + 1  # this is a counter of iterations that give us a sense of the
@@ -175,40 +167,41 @@ def SEIRmodel(n, m, f, path):
         # so we put the first r element of the infected list in the recovered list
 
         for el in newrecovered:
-            ba.node[el]["state"] = "R"  # so we give the R attribute th the recovered nodes
-        a['recovered'].extend(newrecovered)  # and we update the list of recovered people in the dictionary
+            if str(el) in will_die:
+                ba.node[el]["state"] = "D"
+                a['died'].append(el)
+            else:
+                ba.node[el]["state"] = "R"  # so we give the R attribute th the recovered nodes
+                a['recovered'].append(el)  # and we update the list of recovered people in the dictionary
         a['infetti'] = a['infetti'][r:]  # we remove the first r elements from the infected list
-
+        andamentoD[iterationcounter] = len(a['died']) / n
         andamentoI[iterationcounter] = len(a['infetti']) / n  # here we uptade the dictionary andamento we created with
-        # the number of infected over the total
-        # and the corrisponding iteration
+                                                                # the number of infected over the total
+                                                                # and the corrisponding iteration
         andamentoS[iterationcounter] = len(a['susceptible']) / n
         andamentoR[iterationcounter] = len(a['recovered']) / n
         andamentoE[iterationcounter] = len(a['exposed']) / n
-
-    #print(andamentoI,andamentoR, andamentoS,andamentoE)
+        #print('inf,death',len(a['infetti']),len(a['died']))
     # let's plot the spreading of the epidemics over time
 
-    #list1 = andamentoI.items()  # return a list of tuples : (infected,iteration)
-    #x, y = zip(*list1)  # unpack a list of pairs into two tuples
-    #list2 = andamentoS.items()
-    #x, y2 = zip(*list2)
-    #list3 = andamentoR.items()
-    #x, y3 = zip(*list3)
-    #list4 = andamentoE.items()
-    #x, y4 = zip(*list4)
-
-
-
+    list1 = andamentoI.items()  # return a list of tuples : (infected,iteration)
+    x, y = zip(*list1)  # unpack a list of pairs into two tuples
+    list2 = andamentoS.items()
+    x, y2 = zip(*list2)
+    list3 = andamentoR.items()
+    x, y3 = zip(*list3)
+    list4 = andamentoE.items()
+    x, y4 = zip(*list4)
+    list5 = andamentoD.items()
+    x, y5 = zip(*list5)
 
     plt.xlabel('Time')
     plt.plot(x, y,label="Infected")
     plt.plot(x, y2,label="Susceptible")
     plt.plot(x, y3,label="Recovered")
     plt.plot(x, y4, label="Exposed")
-
-
-    leg = plt.legend(loc='best', ncol=2, mode="expand", shadow=True, fancybox=True)
+    plt.plot(x, y5, label="Death")
+    leg = plt.legend(loc='upper left'	, ncol=2, mode="expand", shadow=True, fancybox=True)
     leg.get_frame().set_alpha(0.5)
     infezione = plt.show()
     return (infezione)  # the function returns the plot of the epidemic spreading
@@ -219,5 +212,4 @@ if __name__ == "__main__":
     links = 25  # Number of initial links
     focolai = 3  # numero di focolai
     path = "/home/maria/Desktop/network epidemics/"
-
     SEIRmodel(nodes, links, focolai, path)
