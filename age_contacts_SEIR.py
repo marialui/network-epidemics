@@ -16,36 +16,10 @@ def common_data(list1, list2):
     x=list1.split('-')[1]
     y=list2.split('-')[0]
     result = False
-
-    # traverse in the 1st list
-   # for x in list1:
-
-        # traverse in the 2nd list
-    #    for y in list2:
-
-            # if one common
     if x == y:
         result = True
         return result
-
     return result
-def nothing_in_common(list1,list2, misch):
-    lista1=list1.split('-')
-    lista2=list2.split('-')
-    result = True
-    # traverse in the 1st list
-    for x in lista1:
-
-    # traverse in the 2nd list
-        for y in lista2:
-
-    # if one common
-            if x == y:
-                result = False
-    if result:
-        misch.append(list1)
-    return misch
-
 
 
 def find_key(input_dict, value):
@@ -65,11 +39,11 @@ def contact_population(contacts,ba):  #it gives a statistics on the number of co
     max_c=0
     min_c=10000
      #contains respectively few edges nodes, mid edges nodes, and many edges nodes
-
     lista=[]
+    con_distribution=[]
     for node in ba.nodes():
         bisect.insort(lista, len(ba.edges(int(node))))
-
+        con_distribution.append(len(ba.edges(int(node))))
         if len(ba.edges(int(node))) > max_c:
             max_c=len(ba.edges(int(node)))
 
@@ -80,12 +54,19 @@ def contact_population(contacts,ba):  #it gives a statistics on the number of co
     for j in range (0,len(lista),int(len(lista)/3)):
         edges_numb.append(lista[j])
 
+    # matplotlib histogram
+    plt.hist(con_distribution, color='blue', edgecolor='black',
+             bins=int(180 / 5))
+    # Add labels
+    plt.title('Edges distribution in a Barabasi network')
+    plt.xlabel('edges number')
+    plt.show()
+
 
 
 
     edges_number= range_f(edges_numb) # in gives 3 intervals of contact numbers that characterized the network
-    #print('edges',edges_number)
-                                           #so that we can divide the nodes with just few nodes, from the ones that  have a mid number of edges or a lor
+     #so that we can divide the nodes with just few nodes, from the ones that  have a mid number of edges or a lor
 
     cont_dicts = {}
     for el in edges_number:
@@ -101,13 +82,9 @@ def contact_population(contacts,ba):  #it gives a statistics on the number of co
     for node in ba.nodes():
 
         for key in cont_dicts:
-            #print('the key we are examining is ', key)
             if int(key.split('-')[0])<=len(ba.edges(int(node))) <= int(key.split('-')[1]):
-                #print('the number of node contacts is smaller than',key, 'so we update the dictionary')
                 cont_dicts[key][node]=0
                 break
-
-
     return (d, cont_dicts)
 
 
@@ -135,7 +112,6 @@ def covid_statistics(tabella):      #it takes in input the number of nodes and, 
     new.rename(index={'>90': '90-105'}, inplace=True)
     new.loc[ '90-105',:]=(new.tail(2)).sum()
     new=new.iloc[:-1]
-
     return new
 
 
@@ -143,7 +119,6 @@ def covid_statistics(tabella):      #it takes in input the number of nodes and, 
 # derived from the previous function.
 
 def population_attribute(table, network,table1,Diz,contact_dict):
-    mischaracterized=[]
     t = len(network)
     print(t)
     table1=table1[table1.columns[-2:]]
@@ -162,7 +137,6 @@ def population_attribute(table, network,table1,Diz,contact_dict):
                         # rows= age , col= sex
             n = int(round(perc * t / 100))
             while n != 0:  # finchè non avremo aggiunto tutti gli n nodi di una categoria
-               # print('n is', n)
                 for k in Diz:
                     N = k.split('-')
                     if int(N[0]) <= età <= int(N[1]):
@@ -173,50 +147,30 @@ def population_attribute(table, network,table1,Diz,contact_dict):
                             D = contact_dict[Diz[k]]
                         else:
                             for j in reversed(list(contact_dict.keys())):
-                                print('D is empty', 'Diz[k] is',Diz[k],'j', j)
-                                print('dict has length',len(contact_dict[j].keys()))
-
                                 if contact_dict[j]:
-                                    print(len(contact_dict[j].keys()))
                                     D = contact_dict[j]
-
                                     if (common_data(Diz[k],j)==True) :
-
-                                        print(Diz[k], j)
                                         D = contact_dict[j]
-                                        #LAST=False
-                                        print('lunghezza,',len (D))
                                     break
 
 
                         nodo= random.choice(list(D.keys())) #number of maximum contact that the desidered node can have
-                            #print('node is ' ,nodo, 'diz lunghezza', len(D.keys()))
-
-                        mischaracterized=nothing_in_common(Diz[k],find_key(contact_dict,D),mischaracterized)
                         if nodo in nodi_tmp:  # se è presente sul dizionario con tutti i nodi
                             n = n - 1
                             D.pop(nodo)
 
                             nodi[str(nodo)] = [sex, età, 'S']  # assegna sesso e età al nodo al dizionario definitivo
-                    # note: we added the susceptible state since all of them start in this compartmet
+                                                                # note: we added the susceptible state since all of them start in this compartmet
                             del nodi_tmp[nodo]  # cancella il nodo dal dizionario provvisorio
-                            #print('nodi rimasti',len(nodi_tmp))
                             for anno in diz:
                                 anno1=anno.split('-')
                                 if int(anno1[0]) <= età <= int(anno1[1]):
                                     if diz[anno][sex]==0:
                                         lista=[str(nodo)]
-                                        #print(lista)
-
                                         diz[anno][sex]=lista
-                                        #print(diz[anno][sex])
                                     else:
-                                        #print(diz[anno][sex])
                                         (diz[anno][sex]).append(str(nodo))
 
-    print('mischaracterized are', mischaracterized, len(mischaracterized))
-    for h in contact_dict:
-        print('lunghezza diz shoud be zero',len(list(contact_dict[h].keys())))
     return (nodi, diz )  #dictionary contains the age range: sex:[list of nodes] , is a dictionary of dictionaries
 
 
