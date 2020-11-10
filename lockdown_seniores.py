@@ -229,6 +229,10 @@ def SEIRmodel(n, f, path,lockdays):
     x, y4 = zip(*list4)
     list5 = andamentoD.items()
     x, y5 = zip(*list5)
+
+    datatable= pd.DataFrame((list(zip(y, y2, y3,y4,y5))),columns = ['I', 'S', 'R','E','D'],index=x)
+    print(datatable)
+    datatable.to_csv(r'/Users/marilu/PycharmProjects/networkepidemics/seniores_lockdown_results.csv', index=True, header=True)
     fig = plt.figure()
     plt.xlabel('Time')
     plt.plot(x, y,label="Infected")
@@ -237,6 +241,7 @@ def SEIRmodel(n, f, path,lockdays):
     plt.plot(x, y4, label="Exposed")
     plt.plot(x, y5, label="Death")
     leg = plt.legend(loc='upper left'	, ncol=2, mode="expand", shadow=True, fancybox=True)
+
     leg.get_frame().set_alpha(0.5)
     ax = plt.gca()
     ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d')
