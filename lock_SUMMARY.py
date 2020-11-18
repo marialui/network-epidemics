@@ -3,10 +3,20 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot_lockdowns(generalized,seniores,most_connected):
-    gen=pd.read_csv("%s" % generalized)
-    sen=pd.read_csv("%s" % seniores)
-    most_con=pd.read_csv("%s" % most_connected)
+
+def summary_plot(lock_p, mostc_p, Path):
+    for perc in lock_p:
+        gen_sen_path= Path+'%s/'%(perc)
+        for m_perc in mostc_p:
+            most_path= gen_sen_path+'%s_connections/'%(m_perc)
+            plot_lockdowns(gen_sen_path,most_path)
+
+
+
+def plot_lockdowns(path1,path2):
+    gen=pd.read_csv(path1 + 'generalized_results.csv')
+    sen=pd.read_csv(path1 +  'seniores_results.csv')
+    most_con=pd.read_csv(path2 +'mostconnected_results.csv')
     D = {'INFECTED': 'I', 'EXPOSED': 'E'}
     for compartment in D:
         _gen=gen[D[compartment]]
@@ -23,11 +33,11 @@ def plot_lockdowns(generalized,seniores,most_connected):
         ax = plt.gca()
         ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d')
         fig.autofmt_xdate()
-        fig.savefig('/Users/marilu/PycharmProjects/networkepidemics/lock_summary/lockdown_summary_'+compartment, dpi=fig.dpi)
+        fig.savefig(path2+'lockdown_summary_'+compartment ,dpi=fig.dpi)
+        plt.close()
 
 if __name__ == "__main__":
-    path = "/Users/marilu/PycharmProjects/networkepidemics/lock_summary/"
-    generalized_csv = path + 'generalized_lockdown_results.csv'
-    seniores_csv = path + 'seniores_lockdown_results.csv'
-    mostconnected_csv = path + 'mostconnected_lockdown_results.csv'
-    plot_lockdowns(generalized_csv, seniores_csv, mostconnected_csv)
+    path = "/Users/marilu/PycharmProjects/networkepidemics/lock_"
+    lock_percentage = [0.75, 0.80, 0.85, 0.90]
+    mostconnected_percentage = [0.60, 0.65, 0.70, 0.75]
+    summary_plot(lock_percentage,mostconnected_percentage,path)

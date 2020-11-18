@@ -34,6 +34,7 @@ def network_creation (path,t):     #t number of nodes
     diz = p_df1.to_dict('index')
     df_con = pd.read_csv(path+"contacts_agegroups.csv", index_col=0, names=['contacts'], header=None)
     df_con = round(df_con.sort_values(by=['contacts']))
+    df_con.rename(index={'70-100': '70-105'}, inplace=True)
     print('The number of daily contat for each age group is:\n',df_con)
     table= gen_age(path+"Italy-2019.csv")
     #print(diz)
@@ -152,7 +153,7 @@ def SEIRmodel(n, f, path,lockdays):
     will_die=fight_or_flight(diz2, covid_tab) ############################# THIS IS A DICTIONARY CONTAINING THE NODE
     most_connected=net[3]  #we introduced this dictionary that contains the node with ne most contact in the network
     for k in range(f):
-        spreader = randrange(n)
+        spreader = random.choice(list(ba.nodes()))
         a['infetti'].append(spreader)  # infetti will be a list of f people that has been infected
         ba.nodes[spreader]["state"] = "I"  # a number f of people will have the attribute I (infected)
 
@@ -237,7 +238,7 @@ def SEIRmodel(n, f, path,lockdays):
 
     datatable= pd.DataFrame((list(zip(y, y2, y3,y4,y5))),columns = ['I', 'S', 'R','E','D'],index=x)
     print(datatable)
-    datatable.to_csv(r'/Users/marilu/PycharmProjects/networkepidemics/mostconnected_lockdown_results.csv', index=True, header=True)
+    datatable.to_csv(r'/Users/marilu/PycharmProjects/networkepidemics/lock_summary/mostconnected_lockdown_results.csv', index=True, header=True)
     fig = plt.figure()
     plt.xlabel('Time')
     plt.plot(x, y,label="Infected")
